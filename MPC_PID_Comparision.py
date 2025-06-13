@@ -104,8 +104,29 @@ U3_max = ct * l * (omega_max **2 - omega_min ** 2)
 U4_min = cq * (-2 * omega_max ** 2 + 2* omega_min ** 2)
 U4_max = cq * (-2 * omega_min ** 2 + 2* omega_max ** 2)
 
-y_max = np.array([[U2_max], [U3_max], [U4_max]])
-y_min = np.array([[U2_min], [U3_min], [U4_min]])
+phi_min = -np.pi/6
+phi_max = np.pi/6
+
+phi_dot_min = -3
+phi_dot_max = 3
+
+psi_min = -np.pi*8
+psi_max = np.pi*8
+
+psi_dot_min = -3
+psi_dot_max = 3
+
+theta_min = -np.pi/6
+theta_max = np.pi/6
+
+theta_dot_min = -3
+theta_dot_max = 3
+
+y_max = np.array([[phi_max], [phi_dot_max], [theta_max], [theta_dot_max], [psi_max], [psi_dot_max], [U2_max], [U3_max], [U4_max]])
+y_min = np.array([[phi_min], [phi_dot_min], [theta_min], [theta_dot_min], [psi_min], [psi_dot_min], [U2_min], [U3_min], [U4_min]])
+
+# y_max = np.array([[U2_max], [U3_max], [U4_max]])
+# y_min = np.array([[U2_min], [U3_min], [U4_min]])
 
 # Noise variables
 np.random.seed(42)                                                          # For reproducible results
@@ -119,7 +140,7 @@ noise_mean = 0                                                              # Me
 for i_global in range(0, len(t) - 1):
     # Implement the position controller (state feedback linearization)
     # MPC Ref
-    phi_ref, theta_ref, U1 = support.pos_controller(X_ref[i_global + 1], X_dot_ref[i_global + 1], 
+    phi_ref, theta_ref, U1 = support.adaptive_pos_controller(X_ref[i_global + 1], X_dot_ref[i_global + 1],
                                                   X_dot_dot_ref[i_global + 1], Y_ref[i_global + 1], 
                                                   Y_dot_ref[i_global + 1], Y_dot_dot_ref[i_global + 1], 
                                                   Z_ref[i_global + 1], Z_dot_ref[i_global + 1], 

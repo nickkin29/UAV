@@ -81,7 +81,10 @@ class SupportFilesDrone:
         omega_min=110*np.pi/3 # [rad/s]
         omega_max=860*np.pi/3 # [rad/s]
 
-        C_cm=np.matrix('0 0 0 0 0 0 1 0 0;0 0 0 0 0 0 0 1 0;0 0 0 0 0 0 0 0 1') # constraint matrix for extracting desired outputs for constraints
+        C_cm=np.matrix('1 0 0 0 0 0 0 0 0;0 1 0 0 0 0 0 0 0;0 0 1 0 0 0 0 0 0;0 0 0 1 0 0 0 0 0;0 0 0 0 1 0 0 0 0;0 0 0 0 0 1 0 0 0;0 0 0 0 0 0 1 0 0;0 0 0 0 0 0 0 1 0;0 0 0 0 0 0 0 0 1') # constraint matrix for extracting desired outputs for constraints
+
+
+        # C_cm=np.matrix('0 0 0 0 0 0 1 0 0;0 0 0 0 0 0 0 1 0;0 0 0 0 0 0 0 0 1') # constraint matrix for extracting desired outputs for constraints
 
         # This is good
         kp_att = np.array([0.05, 0.05, 0.05])
@@ -380,18 +383,12 @@ class SupportFilesDrone:
 
         return x, x_dot, x_dot_dot, y, y_dot, y_dot_dot, z, z_dot, z_dot_dot, psiInt
 
-    def pos_controller(self,X_ref,X_dot_ref,X_dot_dot_ref,Y_ref,Y_dot_ref,Y_dot_dot_ref,Z_ref,Z_dot_ref,Z_dot_dot_ref,Psi_ref,states):
+    def adaptive_pos_controller(self,X_ref,X_dot_ref,X_dot_dot_ref,Y_ref,Y_dot_ref,Y_dot_dot_ref,Z_ref,Z_dot_ref,Z_dot_dot_ref,Psi_ref,states):
         '''This function is a position controller - it computes the necessary U1 for the open loop system, and phi & theta angles for the MPC controller'''
 
         # Load the constants
         m=self.constants['m']
         g=self.constants['g']
-        # kx1 = self.constants['Kp']
-        # kx2 = self.constants['Kd']
-        # ky1 = self.constants['Kp']
-        # ky2 = self.constants['Kd']
-        # kz1 = self.constants['Kp']
-        # kz2 = self.constants['Kd']
 
         # Assign the states
         # States: [u,v,w,p,q,r,x,y,z,phi,theta,psi]
@@ -433,14 +430,86 @@ class SupportFilesDrone:
         Kpz = self.constants['Kpz'] * np.diag(Kp_hat)
         Kdz = self.constants['Kdz'] * np.diag(Kd_hat)
 
+        # Compute the values vx, vy, vz for the position controller
         ux=Kpx*ex+Kdx*ex_dot
         uy=Kpy*ey+Kdy*ey_dot
         uz=Kpz*ez+Kdz*ez_dot
 
+        vx=X_dot_dot_ref-ux[0]
+        vy=Y_dot_dot_ref-uy[0]
+        vz=Z_dot_dot_ref-uz[0]
+
+        # Compute phi, theta, U1
+        a=vx/(vz+g)
+        b=vy/(vz+g)
+        c=np.cos(Psi_ref)
+        d=np.sin(Psi_ref)
+        tan_theta=a*c+b*d
+        Theta_ref=np.arctan(tan_theta)
+
+        if Psi_ref>=0:
+            Psi_ref_singularity=Psi_ref-np.floor(abs(Psi_ref)/(2*np.pi))*2*np.pi
+        else:
+            Psi_ref_singularity=Psi_ref+np.floor(abs(Psi_ref)/(2*np.pi))*2*np.pi
+
+        if ((np.abs(Psi_ref_singularity)<np.pi/4 or np.abs(Psi_ref_singularity)>7*np.pi/4) or \
+            (np.abs(Psi_ref_singularity)>3*np.pi/4 and np.abs(Psi_ref_singularity)<5*np.pi/4)):
+            tan_phi=np.cos(Theta_ref)*(np.tan(Theta_ref)*d-b)/c
+        else:
+            tan_phi=np.cos(Theta_ref)*(a-np.tan(Theta_ref)*c)/d
+        Phi_ref=np.arctan(tan_phi)
+        U1=(vz+g)*m/(np.cos(Phi_ref)*np.cos(Theta_ref))
+        print(Phi_ref,Theta_ref,U1)
+        return Phi_ref, Theta_ref, U1
+
+    def pos_controller(self,X_ref,X_dot_ref,X_dot_dot_ref,Y_ref,Y_dot_ref,Y_dot_dot_ref,Z_ref,Z_dot_ref,Z_dot_dot_ref,Psi_ref,states):
+        '''This function is a position controller - it computes the necessary U1 for the open loop system, and phi & theta angles for the MPC controller'''
+
+        # Load the constants
+        m=self.constants['m']
+        g=self.constants['g']
+        kx1 = self.constants['Kp']
+        kx2 = self.constants['Kd']
+        ky1 = self.constants['Kp']
+        ky2 = self.constants['Kd']
+        kz1 = self.constants['Kp']
+        kz2 = self.constants['Kd']
+
+        # Assign the states
+        # States: [u,v,w,p,q,r,x,y,z,phi,theta,psi]
+        x = states[0]
+        y = states[1]
+        z = states[2]
+        phi = states[3]
+        theta = states[4]
+        psi = states[5]
+        u = states[6]
+        v = states[7]
+        w = states[8]
+
+        # Rotational matrix that relates u,v,w with x_dot,y_dot,z_dot
+        R_x=np.array([[1, 0, 0],[0, np.cos(phi), -np.sin(phi)],[0, np.sin(phi), np.cos(phi)]])
+        R_y=np.array([[np.cos(theta),0,np.sin(theta)],[0,1,0],[-np.sin(theta),0,np.cos(theta)]])
+        R_z=np.array([[np.cos(psi),-np.sin(psi),0],[np.sin(psi),np.cos(psi),0],[0,0,1]])
+        R_matrix=np.matmul(R_z,np.matmul(R_y,R_x))
+        pos_vel_body=np.array([[u],[v],[w]])
+        pos_vel_fixed=np.matmul(R_matrix,pos_vel_body)
+        x_dot=pos_vel_fixed[0]
+        y_dot=pos_vel_fixed[1]
+        z_dot=pos_vel_fixed[2]
+
+        # Compute the errors
+        ex=X_ref-x
+        ex_dot=X_dot_ref-x_dot
+        ey=Y_ref-y
+        ey_dot=Y_dot_ref-y_dot
+        ez=Z_ref-z
+        ez_dot=Z_dot_ref-z_dot
+
         # Compute the values vx, vy, vz for the position controller
-        # ux=kx1*ex+kx2*ex_dot
-        # uy=ky1*ey+ky2*ey_dot
-        # uz=kz1*ez+kz2*ez_dot
+        ux=kx1*ex+kx2*ex_dot
+        uy=ky1*ey+ky2*ey_dot
+        uz=kz1*ez+kz2*ez_dot
 
         vx=X_dot_dot_ref-ux[0]
         vy=Y_dot_dot_ref-uy[0]
@@ -468,6 +537,7 @@ class SupportFilesDrone:
         U1=(vz+g)*m/(np.cos(Phi_ref)*np.cos(Theta_ref))
         print(Phi_ref,Theta_ref,U1)
         return Phi_ref, Theta_ref, U1
+
     def LPV_cont_discrete(self,states,omega_total):
         '''This is an LPV model concerning the three rotational axis.'''
 
