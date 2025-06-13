@@ -18,7 +18,7 @@ class SupportFilesDrone:
         # Matrix weights for the cost function (They must be diagonal)
         Q=np.matrix('1 0 0;0 1 0;0 0 1') # weights for outputs (all samples, except the last one)
         S=np.matrix('1 0 0;0 1 0;0 0 1') # weights for the final horizon period outputs
-        R=np.matrix('0.75 0 0;0 0.75 0;0 0 0.75') # weights for inputs
+        R=np.matrix('1 0 0;0 1 0;0 0 1') # weights for inputs
 
         ct = 7.6184*10**(-8)*(60/(2*np.pi))**2 # N*s^2
         cq = 2.6839*10**(-9)*(60/(2*np.pi))**2 # N*m*s^2
@@ -75,7 +75,7 @@ class SupportFilesDrone:
         Kdz = -2
 
         # Trajectory
-        trajectory = 10
+        trajectory = 7
 
         # Constraints
         omega_min=110*np.pi/3 # [rad/s]
@@ -459,7 +459,7 @@ class SupportFilesDrone:
             tan_phi=np.cos(Theta_ref)*(a-np.tan(Theta_ref)*c)/d
         Phi_ref=np.arctan(tan_phi)
         U1=(vz+g)*m/(np.cos(Phi_ref)*np.cos(Theta_ref))
-        print(Phi_ref,Theta_ref,U1)
+        # print(Phi_ref,Theta_ref,U1)
         return Phi_ref, Theta_ref, U1
 
     def pos_controller(self,X_ref,X_dot_ref,X_dot_dot_ref,Y_ref,Y_dot_ref,Y_dot_dot_ref,Z_ref,Z_dot_ref,Z_dot_dot_ref,Psi_ref,states):
@@ -535,7 +535,7 @@ class SupportFilesDrone:
             tan_phi=np.cos(Theta_ref)*(a-np.tan(Theta_ref)*c)/d
         Phi_ref=np.arctan(tan_phi)
         U1=(vz+g)*m/(np.cos(Phi_ref)*np.cos(Theta_ref))
-        print(Phi_ref,Theta_ref,U1)
+        # print(Phi_ref,Theta_ref,U1)
         return Phi_ref, Theta_ref, U1
 
     def LPV_cont_discrete(self,states,omega_total):
@@ -705,59 +705,6 @@ class SupportFilesDrone:
         Fdbt=np.concatenate((temp,temp2),axis=0)
 
         return Hdb,Fdbt,Cdb,Adc,C_cm_g,y_max_global,y_min_global
-
-    def pid_controller(self, phi_ref, theta_ref, psi_ref, states):
-        # --- Extract Attitude States ---
-        phi = states[3]
-        theta = states[4]
-        psi = states[5]
-
-        # print(phi_ref, theta_ref, psi_ref)
-
-        Ts = self.constants['Ts']
-
-        kp = self.constants['kp_att']
-        ki = self.constants['ki_att']
-        kd = self.constants['kd_att']
-
-        prev_error_att = self.constants['prev_error_att']
-
-        integral_att = self.constants['integral_att']
-
-        U2_min = self.constants['U2_min']
-        U2_max = self.constants['U2_max']
-        U3_min = self.constants['U3_min']
-        U3_max = self.constants['U3_max']
-        U4_min = self.constants['U4_min']
-        U4_max = self.constants['U4_max']
-
-        # --- Attitude PID: Compute Errors ---
-        errors_att = np.array([phi_ref - phi, theta_ref - theta, psi_ref - psi])
-
-        # --- Update Integral Term ---
-        integral_att += errors_att
-
-        # --- Compute Filtered Derivative ---
-        derive_att = (errors_att - prev_error_att) / Ts
-        self.constants['prev_error_att'] = errors_att.copy()
-
-        # --- PID Control: Compute Torques ---
-        U2 = (kp[0] * errors_att[0] +
-              ki[0] * integral_att[0] +
-              kd[0] * derive_att[0])
-        U3 = (kp[1] * errors_att[1] +
-              ki[1] * integral_att[1] +
-              kd[1] * derive_att[1])
-        U4 = (kp[2] * errors_att[2] +
-              ki[2] * integral_att[2] +
-              kd[2] * derive_att[2])
-
-        # --- Apply Constraints on Torques ---
-        U2 = np.clip(U2, U2_min, U2_max)
-        U3 = np.clip(U3, U3_min, U3_max)
-        U4 = np.clip(U4, U4_min, U4_max)
-
-        return U2, U3, U4
 
     def open_loop_new_states(self,states,omega_total,U1,U2,U3,U4):
         '''This function computes the new state vector for one sample time later'''
@@ -966,7 +913,7 @@ class SupportFilesDrone:
                 q=q_or+1/6*(q_dot_k1+2*q_dot_k2+2*q_dot_k3+q_dot_k4)*Ts
                 r=r_or+1/6*(r_dot_k1+2*r_dot_k2+2*r_dot_k3+r_dot_k4)*Ts
 
-                print(phi*(np.pi/180), theta*(np.pi/180), psi*(np.pi/180))
+                # print(phi*(np.pi/180), theta*(np.pi/180), psi*(np.pi/180))
 
         for k in range(0,sub_loop):
             states_ani[k,0]=x_or+(x-x_or)/Ts*(k/(sub_loop-1))*Ts
