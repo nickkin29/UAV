@@ -75,7 +75,8 @@ class SupportFilesDrone:
         Kdz = -2
 
         # Trajectory
-        trajectory = 7
+        trajectory = 10
+        # 1 - Circle, 2 - Circle with a jump, 3 - Circle with a parabola, 4 - Circle with a sine wave, 5 - Spiral, 6 - Spiral with a parabola, 7 - Straight line, 8 - Straight line with a sine wave, 9 - Circle with a wave, 10 - Figure 8, 11 - Hover at a point
 
         # Constraints
         omega_min=110*np.pi/3 # [rad/s]
@@ -316,8 +317,8 @@ class SupportFilesDrone:
 
         elif trajectory==10:
             # Figure 8 parameters
-            a = 4.0  # Width of the figure-8
-            b = 2.0  # Height of the figure-8
+            a = 3.0  # Width of the figure-8
+            b = 5.0  # Height of the figure-8
             period = 30.0  # Time to complete one full figure-8
 
             # Angular frequency
