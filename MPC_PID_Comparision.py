@@ -107,7 +107,7 @@ U4_max = cq * (-2 * omega_min ** 2 + 2* omega_max ** 2)
 y_max = np.array([[U2_max], [U3_max], [U4_max]])
 y_min = np.array([[U2_min], [U3_min], [U4_min]])
 
-########## Start the global controller #################################
+########## Start the global controller ##################################
 
 for i_global in range(0, len(t) - 1):
     # Implement the position controller (state feedback linearization)
@@ -126,6 +126,7 @@ for i_global in range(0, len(t) - 1):
     )
     Phi_ref = np.transpose([phi_ref * np.ones(innerDyn_length + 1)])
     Theta_ref = np.transpose([theta_ref * np.ones(innerDyn_length + 1)])
+
     Phi_ref_pid = np.transpose([phi_ref_pid * np.ones(innerDyn_length + 1)])
     Theta_ref_pid = np.transpose([theta_ref_pid * np.ones(innerDyn_length + 1)])
 

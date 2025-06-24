@@ -332,7 +332,6 @@ class SupportFilesDrone:
         Jtp=self.constants['Jtp'] #N*m*s^2=kg*m^2
         Ts=self.constants['Ts'] #s
 
-        # Assign the states
         # States: [x,y,z,phi,theta,psi,u,v,w,p,q,r]
         phi=states[3]
         theta=states[4]
