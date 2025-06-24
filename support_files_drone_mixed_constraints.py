@@ -59,23 +59,8 @@ class SupportFilesDrone:
         noise_switch=0
         # Must be either 0 or 1 (0 - no noise, 1 - Control Input noise ON - 2 - Wind noise ON)
 
-        ##########################################################################################################
-        eta_1 = 1.1
-        eta_2 = 0.1
-        lambda1 = 0.7
-        lambda2 = 1.2
-        k1 = 1
-        k2 = 1
-
-        Kpx = -1
-        Kdx = -2
-        Kpy = -1
-        Kdy = -2
-        Kpz = -1
-        Kdz = -2
-
         # Trajectory
-        trajectory = 10
+        trajectory = 4 # 1 - Straight line, 2 - Circle, 3 - Figure 8, 4 - Switching trajectory
 
         # Constraints
         omega_min=110*np.pi/3 # [rad/s]
@@ -87,11 +72,6 @@ class SupportFilesDrone:
         kp_att = np.array([0.05, 0.05, 0.05])
         ki_att = np.array([0.008, 0.008, 0.008])
         kd_att = np.array([0.03, 0.03, 0.03])
-
-        # This should be bad
-        # kp_att = np.array([0.02, 0.02, 0.02])
-        # ki_att = np.array([0.008, 0.008, 0.008])
-        # kd_att = np.array([0.04, 0.04, 0.04])
 
         integral_att = np.zeros(3)
 
@@ -127,11 +107,7 @@ class SupportFilesDrone:
                         'U4_min': U4_min, 'U4_max': U4_max,
                         'omega_min':omega_min,'omega_max':omega_max,
                         'C_cm':C_cm, 'wind_inertial': wind_inertial,
-                        'Kp': Kp, 'Kd': Kd,
-                        #########################################
-                        'eta_1': eta_1, 'eta_2': eta_2, 'lambda1': lambda1, 'lambda2': lambda2,
-                        'Kpx': Kpx, 'Kdx': Kdx, 'Kpy': Kpy, 'Kdy': Kdy, 'Kpz': Kpz, 'Kdz': Kdz,
-                        'k1': k1, 'k2': k2
+                        'Kp': Kp, 'Kd': Kd
                         }
 
         return None
@@ -167,8 +143,23 @@ class SupportFilesDrone:
         # Define the x, y, z dimensions for the drone trajectories
         alpha=2*np.pi*f*t
 
-        if trajectory==1 or trajectory==2 or trajectory==3 or trajectory==4:
+        if trajectory==1:
             # Trajectory 1
+            x=2*t/20
+            y=2*t/20
+            # z=height_i+d_height/t[-1]*t
+            z = 2*np.ones(len(t))
+
+            x_dot=1/10*np.ones(len(t))
+            y_dot=1/10*np.ones(len(t))
+            # z_dot=d_height/(t[-1])*np.ones(len(t))
+            z_dot = 0*np.ones(len(t))
+
+            x_dot_dot=0*np.ones(len(t))
+            y_dot_dot=0*np.ones(len(t))
+            z_dot_dot=0*np.ones(len(t))
+
+        elif trajectory==2:
             x=r*np.cos(alpha)
             y=r*np.sin(alpha)
             # z=height_i+d_height/(t[-1])*t
@@ -184,134 +175,7 @@ class SupportFilesDrone:
             # z_dot_dot=0*np.ones(len(t))
             z_dot_dot = 0*np.ones(len(t))
 
-            if trajectory==2:
-                # Trajectory 2
-                # Make sure you comment everything except Trajectory 1 and this bonus trajectory
-                x[101:len(x)]=2*(t[101:len(t)]-t[100])/20+x[100]
-                y[101:len(y)]=2*(t[101:len(t)]-t[100])/20+y[100]
-                z[101:len(z)]=z[100]+d_height/t[-1]*(t[101:len(t)]-t[100])
-
-                x_dot[101:len(x_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                y_dot[101:len(y_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                z_dot[101:len(z_dot*(t/20))]=d_height/(t[-1])*np.ones(len(t[101:len(t)]))
-
-                x_dot_dot[101:len(x_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                y_dot_dot[101:len(y_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                z_dot_dot[101:len(z_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-
-            elif trajectory==3:
-                # Trajectory 3
-                # Make sure you comment everything except Trajectory 1 and this bonus trajectory
-                x[101:len(x)]=2*(t[101:len(t)]-t[100])/20+x[100]
-                y[101:len(y)]=2*(t[101:len(t)]-t[100])/20+y[100]
-                z[101:len(z)]=z[100]+d_height/t[-1]*(t[101:len(t)]-t[100])**2
-
-                x_dot[101:len(x_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                y_dot[101:len(y_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                z_dot[101:len(z_dot)]=2*d_height/(t[-1])*(t[101:len(t)]-t[100])
-
-                x_dot_dot[101:len(x_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                y_dot_dot[101:len(y_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                z_dot_dot[101:len(z_dot_dot)]=2*d_height/t[-1]*np.ones(len(t[101:len(t)]))
-
-            elif trajectory==4:
-                # Trajectory 4
-                # Make sure you comment everything except Trajectory 1 and this bonus trajectory
-                x[101:len(x)]=2*(t[101:len(t)]-t[100])/20+x[100]
-                y[101:len(y)]=2*(t[101:len(t)]-t[100])/20+y[100]
-                z[101:len(z)]=z[100]+50*d_height/t[-1]*np.sin(0.1*(t[101:len(t)]-t[100]))
-
-                x_dot[101:len(x_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                y_dot[101:len(y_dot)]=1/10*np.ones(len(t[101:len(t)]))
-                z_dot[101:len(z_dot)]=5*d_height/t[-1]*np.cos(0.1*(t[101:len(t)]-t[100]))
-
-                x_dot_dot[101:len(x_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                y_dot_dot[101:len(y_dot_dot)]=0*np.ones(len(t[101:len(t)]))
-                z_dot_dot[101:len(z_dot_dot)]=-0.5*d_height/t[-1]*np.sin(0.1*(t[101:len(t)]-t[100]))
-
-        elif trajectory==5 or trajectory==6:
-            if trajectory==5:
-                power=1
-            else:
-                power=2
-
-            if power == 1:
-                # Trajectory 5
-                r_2=r/15
-                x=(r_2*t**power+r)*np.cos(alpha)
-                y=(r_2*t**power+r)*np.sin(alpha)
-                z=height_i+d_height/t[-1]*t
-
-                x_dot=r_2*np.cos(alpha)-(r_2*t+r)*np.sin(alpha)*2*np.pi*f
-                y_dot=r_2*np.sin(alpha)+(r_2*t+r)*np.cos(alpha)*2*np.pi*f
-                z_dot=d_height/(t[-1])*np.ones(len(t))
-
-                x_dot_dot=-r_2*np.sin(alpha)*4*np.pi*f-(r_2*t+r)*np.cos(alpha)*(2*np.pi*f)**2
-                y_dot_dot=r_2*np.cos(alpha)*4*np.pi*f-(r_2*t+r)*np.sin(alpha)*(2*np.pi*f)**2
-                z_dot_dot=0*np.ones(len(t))
-            else:
-                # Trajectory 6
-                r_2=r/500
-                x=(r_2*t**power+r)*np.cos(alpha)
-                y=(r_2*t**power+r)*np.sin(alpha)
-                z=height_i+d_height/t[-1]*t
-
-                x_dot=power*r_2*t**(power-1)*np.cos(alpha)-(r_2*t**(power)+r)*np.sin(alpha)*2*np.pi*f
-                y_dot=power*r_2*t**(power-1)*np.sin(alpha)+(r_2*t**(power)+r)*np.cos(alpha)*2*np.pi*f
-                z_dot=d_height/(t[-1])*np.ones(len(t))
-
-                x_dot_dot=(power*(power-1)*r_2*t**(power-2)*np.cos(alpha)-power*r_2*t**(power-1)*np.sin(alpha)*2*np.pi*f)-\
-                            (power*r_2*t**(power-1)*np.sin(alpha)*2*np.pi*f+(r_2*t**power+r_2)*np.cos(alpha)*(2*np.pi*f)**2)
-                y_dot_dot=(power*(power-1)*r_2*t**(power-2)*np.sin(alpha)+power*r_2*t**(power-1)*np.cos(alpha)*2*np.pi*f)+\
-                            (power*r_2*t**(power-1)*np.cos(alpha)*2*np.pi*f-(r_2*t**power+r_2)*np.sin(alpha)*(2*np.pi*f)**2)
-                z_dot_dot=0*np.ones(len(t))
-
-        elif trajectory==7:
-            # Trajectory 7
-            x=2*t/20
-            y=2*t/20
-            # z=height_i+d_height/t[-1]*t
-            z = 2*np.ones(len(t))
-
-            x_dot=1/10*np.ones(len(t))
-            y_dot=1/10*np.ones(len(t))
-            # z_dot=d_height/(t[-1])*np.ones(len(t))
-            z_dot = 0*np.ones(len(t))
-
-            x_dot_dot=0*np.ones(len(t))
-            y_dot_dot=0*np.ones(len(t))
-            z_dot_dot=0*np.ones(len(t))
-
-        elif trajectory==8:
-            # Trajectory 8
-            x=r/5*np.sin(alpha)+t/100
-            y=t/100-1
-            z=height_i+d_height/t[-1]*t
-
-            x_dot=r/5*np.cos(alpha)*2*np.pi*f+1/100
-            y_dot=1/100*np.ones(len(t))
-            z_dot=d_height/(t[-1])*np.ones(len(t))
-
-            x_dot_dot=-r/5*np.sin(alpha)*(2*np.pi*f)**2
-            y_dot_dot=0*np.ones(len(t))
-            z_dot_dot=0*np.ones(len(t))
-
-        elif trajectory==9:
-            # Trajectory 9
-            wave_w=1
-            x=r*np.cos(alpha)
-            y=r*np.sin(alpha)
-            z=height_i+7*d_height/t[-1]*np.sin(wave_w*t)
-
-            x_dot=-r*np.sin(alpha)*2*np.pi*f
-            y_dot=r*np.cos(alpha)*2*np.pi*f
-            z_dot=7*d_height/(t[-1])*np.cos(wave_w*t)*wave_w
-
-            x_dot_dot=-r*np.cos(alpha)*(2*np.pi*f)**2
-            y_dot_dot=-r*np.sin(alpha)*(2*np.pi*f)**2
-            z_dot_dot=-7*d_height/(t[-1])*np.sin(wave_w*t)*wave_w**2
-
-        elif trajectory==10:
+        elif trajectory==3:
             # Figure 8 parameters
             a = 4.0  # Width of the figure-8
             b = 2.0  # Height of the figure-8
@@ -335,20 +199,34 @@ class SupportFilesDrone:
             y_dot_dot = -4 * b * w ** 2 * np.sin(2 * w * t)
             z_dot_dot = np.zeros(len(t))
 
-        elif trajectory==11:
-            # Trajectory 11 - Hover at a point
-            waypoints = np.array([[5, 5, 2]])  # Single hover point
+        elif trajectory==4:
+            x = r * np.cos(alpha)
+            y = r * np.sin(alpha)
+            # z=height_i+d_height/(t[-1])*t
+            z = 2 * np.ones(len(t))
 
-            # Initialize arrays 
-            x = np.ones(len(t)) * 9  # Constant x position
-            y = np.ones(len(t)) * 9  # Constant y position
-            z = np.ones(len(t)) * 9  # Constant z position
-            x_dot = np.zeros(len(t))  # Zero velocity
-            y_dot = np.zeros(len(t))
-            z_dot = np.zeros(len(t))
-            x_dot_dot = np.zeros(len(t))  # Zero acceleration
-            y_dot_dot = np.zeros(len(t))
-            z_dot_dot = np.zeros(len(t))
+            x_dot = -r * np.sin(alpha) * 2 * np.pi * f
+            y_dot = r * np.cos(alpha) * 2 * np.pi * f
+            # z_dot=d_height/(t[-1])*np.ones(len(t))
+            z_dot = 0 * np.ones(len(t))
+
+            x_dot_dot = -r * np.cos(alpha) * (2 * np.pi * f) ** 2
+            y_dot_dot = -r * np.sin(alpha) * (2 * np.pi * f) ** 2
+            # z_dot_dot=0*np.ones(len(t))
+            z_dot_dot = 0 * np.ones(len(t))
+            # Make sure you comment everything except Trajectory 1 and this bonus trajectory
+            x[101:len(x)] = 2 * (t[101:len(t)] - t[100]) / 20 + x[100]
+            y[101:len(y)] = 2 * (t[101:len(t)] - t[100]) / 20 + y[100]
+            z[101:len(z)] = z[100] + 50 * d_height / t[-1] * np.sin(0.1 * (t[101:len(t)] - t[100]))
+
+            x_dot[101:len(x_dot)] = 1 / 10 * np.ones(len(t[101:len(t)]))
+            y_dot[101:len(y_dot)] = 1 / 10 * np.ones(len(t[101:len(t)]))
+            z_dot[101:len(z_dot)] = 5 * d_height / t[-1] * np.cos(0.1 * (t[101:len(t)] - t[100]))
+
+            x_dot_dot[101:len(x_dot_dot)] = 0 * np.ones(len(t[101:len(t)]))
+            y_dot_dot[101:len(y_dot_dot)] = 0 * np.ones(len(t[101:len(t)]))
+            z_dot_dot[101:len(z_dot_dot)] = -0.5 * d_height / t[-1] * np.sin(0.1 * (t[101:len(t)] - t[100]))
+
         else:
             exit()
 
@@ -386,12 +264,12 @@ class SupportFilesDrone:
         # Load the constants
         m=self.constants['m']
         g=self.constants['g']
-        # kx1 = self.constants['Kp']
-        # kx2 = self.constants['Kd']
-        # ky1 = self.constants['Kp']
-        # ky2 = self.constants['Kd']
-        # kz1 = self.constants['Kp']
-        # kz2 = self.constants['Kd']
+        kx1 = self.constants['Kp']
+        kx2 = self.constants['Kd']
+        ky1 = self.constants['Kp']
+        ky2 = self.constants['Kd']
+        kz1 = self.constants['Kp']
+        kz2 = self.constants['Kd']
 
         # Assign the states
         # States: [u,v,w,p,q,r,x,y,z,phi,theta,psi]
@@ -424,28 +302,15 @@ class SupportFilesDrone:
         ez=Z_ref-z
         ez_dot=Z_dot_ref-z_dot
 
-        Kp_hat, Kd_hat = self.compute_adaptive_gains([ex, ey, ez], [ex_dot[0], ey_dot[0], ez_dot[0]])
-
-        Kpx = self.constants['Kpx'] * np.diag(Kp_hat)
-        Kdx = self.constants['Kdx'] * np.diag(Kd_hat)
-        Kpy = self.constants['Kpy'] * np.diag(Kp_hat)
-        Kdy = self.constants['Kdy'] * np.diag(Kd_hat)
-        Kpz = self.constants['Kpz'] * np.diag(Kp_hat)
-        Kdz = self.constants['Kdz'] * np.diag(Kd_hat)
-
-        ux=Kpx*ex+Kdx*ex_dot
-        uy=Kpy*ey+Kdy*ey_dot
-        uz=Kpz*ez+Kdz*ez_dot
-
         # Compute the values vx, vy, vz for the position controller
-        # ux=kx1*ex+kx2*ex_dot
-        # uy=ky1*ey+ky2*ey_dot
-        # uz=kz1*ez+kz2*ez_dot
+        ux=kx1*ex+kx2*ex_dot
+        uy=ky1*ey+ky2*ey_dot
+        uz=kz1*ez+kz2*ez_dot
 
         vx=X_dot_dot_ref-ux[0]
         vy=Y_dot_dot_ref-uy[0]
         vz=Z_dot_dot_ref-uz[0]
-        # print(vx,vy,vz)
+        # Compute the reference yaw angle
         # Compute phi, theta, U1
         a=vx/(vz+g)
         b=vy/(vz+g)

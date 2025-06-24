@@ -39,7 +39,7 @@ rt = 0
 states = np.array([xt, yt, zt, phit, thetat, psit, ut, vt, wt, pt, qt, rt])
 states_pid = np.array([xt, yt, zt, phit, thetat, psit, ut, vt, wt, pt, qt, rt])
 
-statesTotal = [states] # It will keep track of all your states during the entire manoeuvre
+statesTotal = [states]
 statesTotal_pid = [states_pid]
 
 statesTotals = [states]  # For error
@@ -60,9 +60,9 @@ omega_max = constants['omega_max']
 
 # Initial drone propeller states
 omega1 = omega_min # rad/s at t=-Ts s (Ts seconds before NOW)
-omega2 = omega_min # rad/s at t=-Ts s (Ts seconds before NOW)
-omega3 = omega_min # rad/s at t=-Ts s (Ts seconds before NOW)
-omega4 = omega_min # rad/s at t=-Ts s (Ts seconds before NOW)
+omega2 = omega_min
+omega3 = omega_min
+omega4 = omega_min
 omega_total = omega1 - omega2 + omega3 - omega4
 omega_total_pid = omega1 - omega2 + omega3 - omega4
 
@@ -72,15 +72,15 @@ l = constants['l']
 
 # Plus configuration
 U1 = ct * (omega1 ** 2 + omega2 ** 2 + omega3 ** 2 + omega4 ** 2)           # Input at t = -Ts s
-U2 = ct * l * (omega2 ** 2 - omega4 ** 2)                                   # Input at t = -Ts s
-U3 = ct * l * (omega3 ** 2 - omega1 ** 2)                                   # Input at t = -Ts s
-U4 = cq * (-omega1 ** 2 + omega2 ** 2 - omega3 ** 2 + omega4 ** 2)          # Input at t = -Ts s
+U2 = ct * l * (omega2 ** 2 - omega4 ** 2)
+U3 = ct * l * (omega3 ** 2 - omega1 ** 2)
+U4 = cq * (-omega1 ** 2 + omega2 ** 2 - omega3 ** 2 + omega4 ** 2)
 
 # Plus configuration
-U1_pid = ct * (omega1 ** 2 + omega2 ** 2 + omega3 ** 2 + omega4 ** 2)       # Input at t = -Ts s
-U2_pid = ct * l *(omega2 ** 2 - omega4 ** 2)                                # Input at t = -Ts s
-U3_pid = ct * l *(omega3 ** 2 - omega1 ** 2)                                # Input at t = -Ts s
-U4_pid = cq * (-omega1 ** 2 + omega2 ** 2 - omega3 ** 2 + omega4 ** 2)      # Input at t = -Ts s
+U1_pid = ct * (omega1 ** 2 + omega2 ** 2 + omega3 ** 2 + omega4 ** 2)
+U2_pid = ct * l *(omega2 ** 2 - omega4 ** 2)
+U3_pid = ct * l *(omega3 ** 2 - omega1 ** 2)
+U4_pid = cq * (-omega1 ** 2 + omega2 ** 2 - omega3 ** 2 + omega4 ** 2)
 
 UTotal = np.array([[U1, U2, U3, U4]])                                       # 4 inputs MPC
 UTotal_pid = np.array([[U1_pid, U2_pid, U3_pid, U4_pid]])                   # 4 inputs PID
@@ -322,22 +322,14 @@ for i_global in range(0, len(t) - 1):
         omega3P2_pid = omegas_vector_pid[2, 0]
         omega4P2_pid = omegas_vector_pid[3, 0]
 
-        if omega1P2 <= 0 or omega2P2 <= 0 or omega3P2 <= 0 or omega4P2 <= 0 or omega1P2_pid <= 0 or omega2P2_pid <= 0 or omega3P2_pid <= 0 or omega4P2_pid <= 0:
-            print("You can't take a square root of a negative number")
-            print("The problem might be that the trajectory is too chaotic or it might have discontinuous jumps")
-            print("Try to make a smoother trajectory without discontinuous jumps")
-            print("Other possible causes might be values for variables such as Ts, hz, innerDyn_length, px, py, pz")
-            print("If problems occur, please download the files again, use the default settings and try to change values one by one.")
-            exit()
-        else:
-            omega1 = np.sqrt(omega1P2)
-            omega2 = np.sqrt(omega2P2)
-            omega3 = np.sqrt(omega3P2)
-            omega4 = np.sqrt(omega4P2)
-            omega1_pid = np.sqrt(omega1P2_pid)
-            omega2_pid = np.sqrt(omega2P2_pid)
-            omega3_pid = np.sqrt(omega3P2_pid)
-            omega4_pid = np.sqrt(omega4P2_pid)
+        omega1 = np.sqrt(omega1P2)
+        omega2 = np.sqrt(omega2P2)
+        omega3 = np.sqrt(omega3P2)
+        omega4 = np.sqrt(omega4P2)
+        omega1_pid = np.sqrt(omega1P2_pid)
+        omega2_pid = np.sqrt(omega2P2_pid)
+        omega3_pid = np.sqrt(omega3P2_pid)
+        omega4_pid = np.sqrt(omega4P2_pid)
 
         # Apply constraints on omega
         omega1 = np.clip(omega1, omega_min, omega_max)
@@ -395,8 +387,6 @@ UTotal_U2_pid=UTotal_ani_pid[:,1]
 UTotal_U3_pid=UTotal_ani_pid[:,2]
 UTotal_U4_pid=UTotal_ani_pid[:,3]
 
-print(states[9], states_pid[10], states[11])
-
 # Plot the world
 plt.figure(figsize = (16, 9))
 plt.get_current_fig_manager().set_window_title('Trajectory tracking')
@@ -404,7 +394,7 @@ plt.get_current_fig_manager().set_window_title('Trajectory tracking')
 ax = plt.subplot(111, projection = '3d')
 #ax=plt.axes(projection='3d')
 ax.plot(X_ref,Y_ref,Z_ref,'b',label='reference')
-# ax.plot(statesTotal_x_pid,statesTotal_y_pid,statesTotal_z_pid,'g',label='PID_trajectory')
+ax.plot(statesTotal_x_pid,statesTotal_y_pid,statesTotal_z_pid,'g',label='PID_trajectory')
 ax.plot(statesTotal_x,statesTotal_y,statesTotal_z,'r',label='MPC_trajectory')
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')
