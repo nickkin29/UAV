@@ -36,12 +36,6 @@ class SupportFilesDrone:
 
         sub_loop=5 # for animation purposes
 
-        # Drag force:
-        drag_switch=1 # Must be either 0 or 1 (0 - drag force OFF, 1 - drag force ON)
-
-        # Wind noise
-        wind_inertial = np.array([5,0,0])       # m/s
-
         # Drag force coefficients [-]:
         C_D_u = 1.5
         C_D_v=1.5
@@ -54,10 +48,6 @@ class SupportFilesDrone:
 
         # Air density
         rho = 1.225 # [kg/m^3]
-
-        # Noise switch:
-        noise_switch=0
-        # Must be either 0 or 1 (0 - no noise, 1 - Control Input noise ON - 2 - Wind noise ON)
 
         # Trajectory
         trajectory = 4 # 1 - Straight line, 2 - Circle, 3 - Figure 8, 4 - Switching trajectory
@@ -97,17 +87,16 @@ class SupportFilesDrone:
                         'innerDyn_length':innerDyn_length,
                         'r':r,'f':f,'height_i':height_i,
                         'height_f':height_f, 'sub_loop':sub_loop,
-                        'drag_switch':drag_switch,'C_D_u':C_D_u,'C_D_v':C_D_v,
+                        'C_D_u':C_D_u,'C_D_v':C_D_v,
                         'C_D_w':C_D_w,'A_u':A_u,'A_v':A_v,'A_w':A_w,'rho':rho,
-                        'trajectory':trajectory, 'noise_switch': noise_switch,
+                        'trajectory':trajectory,
                         'kp_att': kp_att, 'ki_att': ki_att, 'kd_att': kd_att,
                         'alpha': alpha, 'integral_att': integral_att, 'prev_error_att': prev_error_att,
                         'filtered_derive_att': filtered_derive_att, 'U1_min': U1_min, 'U1_max': U1_max,
                         'U2_min': U2_min, 'U2_max': U2_max, 'U3_min': U3_min, 'U3_max': U3_max,
                         'U4_min': U4_min, 'U4_max': U4_max,
                         'omega_min':omega_min,'omega_max':omega_max,
-                        'C_cm':C_cm, 'wind_inertial': wind_inertial,
-                        'Kp': Kp, 'Kd': Kd
+                        'C_cm':C_cm,'Kp': Kp, 'Kd': Kd
                         }
 
         return None
@@ -331,7 +320,7 @@ class SupportFilesDrone:
             tan_phi=np.cos(Theta_ref)*(a-np.tan(Theta_ref)*c)/d
         Phi_ref=np.arctan(tan_phi)
         U1=(vz+g)*m/(np.cos(Phi_ref)*np.cos(Theta_ref))
-        print(Phi_ref,Theta_ref,U1)
+
         return Phi_ref, Theta_ref, U1
     def LPV_cont_discrete(self,states,omega_total):
         '''This is an LPV model concerning the three rotational axis.'''
@@ -507,8 +496,6 @@ class SupportFilesDrone:
         theta = states[4]
         psi = states[5]
 
-        # print(phi_ref, theta_ref, psi_ref)
-
         Ts = self.constants['Ts']
 
         kp = self.constants['kp_att']
@@ -565,8 +552,6 @@ class SupportFilesDrone:
         g=self.constants['g']
         Jtp=self.constants['Jtp']
         Ts=self.constants['Ts']
-        noise_switch = self.constants['noise_switch']
-        wind_inertial = self.constants['wind_inertial']
 
         # States: [x,y,z,phi,theta,psi,u,v,w,p,q,r]
         current_states=states
@@ -588,7 +573,6 @@ class SupportFilesDrone:
         U_ani=np.zeros((sub_loop,4))
 
         # Drag force:
-        drag_switch=self.constants['drag_switch']
         C_D_u=self.constants['C_D_u']
         C_D_v=self.constants['C_D_v']
         C_D_w=self.constants['C_D_w']
@@ -621,29 +605,14 @@ class SupportFilesDrone:
             R_z = np.array([[np.cos(psi), -np.sin(psi), 0], [np.sin(psi), np.cos(psi), 0], [0, 0, 1]])
             R_matrix = np.matmul(R_z, np.matmul(R_y, R_x))
 
-            # Transform wind velocity from inertial to body frame
-            if noise_switch == 2:
-                wind_body = np.matmul(np.linalg.inv(R_matrix), wind_inertial)
-                wind_u, wind_v, wind_w = wind_body[0], wind_body[1], wind_body[2]
-            else:
-                wind_u, wind_v, wind_w = 0.0, 0.0, 0.0  # No wind if noise_switch is off
-
-            if drag_switch==1:
-                Fd_u=0.5*C_D_u*rho*u**2*A_u
-                Fd_v=0.5*C_D_v*rho*v**2*A_v
-                Fd_w=0.5*C_D_w*rho*w**2*A_w
-            elif drag_switch==0:
-                Fd_u=0
-                Fd_v=0
-                Fd_w=0
-            else:
-                print("drag_switch variable must be either 0 or 1 in the init function")
-                exit()
+            Fd_u=0.5*C_D_u*rho*u**2*A_u
+            Fd_v=0.5*C_D_v*rho*v**2*A_v
+            Fd_w=0.5*C_D_w*rho*w**2*A_w
 
             # Compute wind-induced forces based on relative velocity
-            Fw_u = 0.5 * C_D_u * rho * (u - wind_u) ** 2 * A_u * np.sign(u - wind_u)
-            Fw_v = 0.5 * C_D_v * rho * (v - wind_v) ** 2 * A_v * np.sign(v - wind_v)
-            Fw_w = 0.5 * C_D_w * rho * (w - wind_w) ** 2 * A_w * np.sign(w - wind_w)
+            Fw_u = 0.5 * C_D_u * rho * u ** 2 * A_u * np.sign(u)
+            Fw_v = 0.5 * C_D_v * rho * v ** 2 * A_v * np.sign(v)
+            Fw_w = 0.5 * C_D_w * rho * w ** 2 * A_w * np.sign(w)
 
             # Compute slopes k_x
             u_dot=(v*r-w*q)+g*np.sin(theta)-(Fd_u+Fw_u)/m
@@ -760,8 +729,6 @@ class SupportFilesDrone:
                 p=p_or+1/6*(p_dot_k1+2*p_dot_k2+2*p_dot_k3+p_dot_k4)*Ts
                 q=q_or+1/6*(q_dot_k1+2*q_dot_k2+2*q_dot_k3+q_dot_k4)*Ts
                 r=r_or+1/6*(r_dot_k1+2*r_dot_k2+2*r_dot_k3+r_dot_k4)*Ts
-
-                print(phi*(np.pi/180), theta*(np.pi/180), psi*(np.pi/180))
 
         for k in range(0,sub_loop):
             states_ani[k,0]=x_or+(x-x_or)/Ts*(k/(sub_loop-1))*Ts

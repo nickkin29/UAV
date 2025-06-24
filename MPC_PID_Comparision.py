@@ -107,13 +107,6 @@ U4_max = cq * (-2 * omega_min ** 2 + 2* omega_max ** 2)
 y_max = np.array([[U2_max], [U3_max], [U4_max]])
 y_min = np.array([[U2_min], [U3_min], [U4_min]])
 
-# Noise variables
-np.random.seed(42)                                                          # For reproducible results
-
-# Add these noise parameters after the initial constants
-noise_std = 0.002                                                       # Standard deviation of the Gaussian noise
-noise_mean = 0                                                              # Mean of the Gaussian noise
-
 ########## Start the global controller #################################
 
 for i_global in range(0, len(t) - 1):
@@ -175,7 +168,6 @@ for i_global in range(0, len(t) - 1):
         k = k + 1
 
     # Initiate the controller - simulation loops
-    noise_switch = constants['noise_switch']
     hz = constants['hz'] # horizon period
     k = 0 # for reading reference signals
     # statesTotal2 = np.concatenate((statesTotal2, [states]), axis = 0)
@@ -214,19 +206,6 @@ for i_global in range(0, len(t) - 1):
         U2 = U2 + du[0]
         U3 = U3 + du[1]
         U4 = U4 + du[2]
-
-        noise_U1 = np.random.normal(noise_mean, noise_std)
-        noise_U2 = np.random.normal(noise_mean, noise_std)
-        noise_U3 = np.random.normal(noise_mean, noise_std)
-        noise_U4 = np.random.normal(noise_mean, noise_std)
-
-        # Inside the global controller loop, after calculating U1-U4 for both controllers
-        # For MPC (after U2, U3, U4 calculation):
-        if noise_switch == 1:
-            U1 += noise_U1
-            U2 += noise_U2
-            U3 += noise_U3
-            U4 += noise_U4
 
         if U1 < U1_min:
             U1 = U1_min
@@ -285,13 +264,6 @@ for i_global in range(0, len(t) - 1):
                                             (Theta_ref_pid[i][0]),
                                             (Psi_ref[i][0]),
                                             states_pid)
-
-        if noise_switch == 1:
-            # For PID (after U2_pid, U3_pid, U4_pid calculation):
-            U1_pid += noise_U1
-            U2_pid += noise_U2
-            U3_pid += noise_U3
-            U4_pid += noise_U4
 
         # For PID:
         if U1_pid < U1_min:
